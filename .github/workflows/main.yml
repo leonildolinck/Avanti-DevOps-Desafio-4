@@ -11,7 +11,7 @@ on:
   workflow_dispatch: # Permite o acionamento manual
 
 env:
-  DOCKER_USER: vars.DOCKER_USER
+  DOCKER_USER: ${{ vars.DOCKER_USER }}
   DOCKER_PASS: ${{ secrets.DOCKER_PASS }} # Segredo configurado no GitHub
   DOCKER_IMAGE_NAME: ${{ vars.DOCKER_USER }}/ms-saudacoes-aleatorias
   DOCKER_IMAGE_TAG: 1.0.${{ github.run_id }}
