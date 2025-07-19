@@ -1,4 +1,4 @@
-name: Destroy Infraestrutura
+name: Destroy Infra
 
 on:
   workflow_dispatch:
@@ -25,8 +25,11 @@ jobs:
         run: terraform -chdir=infra init
         env:
           KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
+          TFC_TOKEN: ${{ secrets.TFC_TOKEN }}
+
 
       - name: Terraform Destroy
         run: terraform -chdir=infra destroy -auto-approve
         env:
           KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
+          TFC_TOKEN: ${{ secrets.TFC_TOKEN }}

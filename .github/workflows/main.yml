@@ -137,6 +137,8 @@ jobs:
         run: terraform -chdir=infra init
         env:
           KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
+          TFC_TOKEN: ${{ secrets.TFC_TOKEN }}
+
 
       - name: Terraform Validate
         id: validate
@@ -149,6 +151,8 @@ jobs:
           KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
           TF_VAR_docker_image_name: ${{ env.DOCKER_IMAGE_NAME }}
           TF_VAR_docker_image_tag: ${{ env.DOCKER_IMAGE_TAG }}
+          TFC_TOKEN: ${{ secrets.TFC_TOKEN }}
+
 
       - name: Save Terraform state
         uses: actions/upload-artifact@v4

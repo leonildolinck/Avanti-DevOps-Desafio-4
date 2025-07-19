@@ -1,14 +1,21 @@
 terraform {
+  backend "remote" {
+    organization = "leonildo-devops" # Substitua pelo nome da sua organização no Terraform Cloud
+
+    workspaces {
+      name = "saudacoes-terraform" # Substitua pelo nome do seu workspace
+    }
+  }
+
   required_providers {
     koyeb = {
       source = "koyeb/koyeb"
     }
   }
 }
+
 provider "koyeb" {
-  #
-  # Use the KOYEB_TOKEN env variable to set your Koyeb API token.
-  #
+  # Use a variável de ambiente KOYEB_TOKEN para autenticação
 }
 
 resource "koyeb_app" "my-app" {
