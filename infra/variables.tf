@@ -20,7 +20,7 @@ variable "container_port" {
 
 variable "docker_image_name" {
   type    = string
-  default = "xxxxxx/api-saudacoes-aleatorias"
+  default = "leonildolinck/api-saudacoes-aleatorias"
 }
 
 variable "docker_image_tag" {
