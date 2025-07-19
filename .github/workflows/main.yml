@@ -156,7 +156,7 @@ jobs:
   destroy:
     name: Destroy Staging
     runs-on: ubuntu-latest
-    needs: deploy
+    #needs: deploy
     if: github.event_name == 'workflow_dispatch' && github.event.inputs.destroy == 'true'
     environment: staging
 
