@@ -1,0 +1,32 @@
+name: Destroy Infraestrutura
+
+on:
+  workflow_dispatch:
+
+jobs:
+  destroy:
+    name: Destroy Staging Infra
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Baixar Terraform State
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-state
+          path: infra
+
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform -chdir=infra init
+        env:
+          KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
+
+      - name: Terraform Destroy
+        run: terraform -chdir=infra destroy -auto-approve
+        env:
+          KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
