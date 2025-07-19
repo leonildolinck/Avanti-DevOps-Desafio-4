@@ -4,16 +4,16 @@ on:
   push:
     branches:
       - main
-      - '*' # Executa em todas as branches
+      - "*" # Executa em todas as branches
   pull_request:
     branches:
       - main
   workflow_dispatch:
     inputs:
       destroy:
-        description: 'Destruir a infra após deploy?'
+        description: "Destruir a infra após deploy?"
         required: false
-        default: 'false'
+        default: "false"
 
 env:
   DOCKER_USER: ${{ vars.DOCKER_USER }}
@@ -36,7 +36,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: "1.22"
 
       - name: Go Fmt & Vet
         run: |
@@ -63,7 +63,7 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
-          go-version: '1.22'
+          go-version: "1.22"
 
       - name: Install gotestsum
         run: go install gotest.tools/gotestsum@latest
@@ -74,7 +74,7 @@ jobs:
           # CGO_ENABLED=1 é necessário se houver código C, mas requer gcc.
           # A imagem ubuntu-latest já tem o gcc.
           CGO_ENABLED=1 gotestsum --junitfile report.xml --format testname
-      
+
       - name: Upload test results
         uses: actions/upload-artifact@v4
         if: always() # Sempre executa este passo, mesmo que o anterior falhe
@@ -150,6 +150,13 @@ jobs:
           TF_VAR_docker_image_name: ${{ env.DOCKER_IMAGE_NAME }}
           TF_VAR_docker_image_tag: ${{ env.DOCKER_IMAGE_TAG }}
 
+      - name: Save Terraform state
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-state
+          path: |
+            infra/terraform.tfstate
+            infra/.terraform
 
   # Job para destruir a infraestrutura manualmente
 
@@ -161,6 +168,12 @@ jobs:
     environment: staging
 
     steps:
+      - name: Download Terraform state
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-state
+          path: infra
+
       - name: Debug input
         run: |
           echo "event name: ${{ github.event_name }}"
@@ -181,7 +194,6 @@ jobs:
         run: terraform -chdir=infra destroy -auto-approve
         env:
           KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
-
 
   debug-destroy-input:
     name: Debug destroy input
