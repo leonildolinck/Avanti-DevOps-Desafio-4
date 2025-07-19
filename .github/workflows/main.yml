@@ -161,6 +161,11 @@ jobs:
     environment: staging
 
     steps:
+      - name: Debug input
+        run: |
+          echo "event name: ${{ github.event_name }}"
+          echo "destroy input: ${{ github.event.inputs.destroy }}"
+
       - name: Checkout code
         uses: actions/checkout@v4
 
