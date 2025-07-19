@@ -181,3 +181,14 @@ jobs:
         run: terraform -chdir=infra destroy -auto-approve
         env:
           KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
+
+
+  debug-destroy-input:
+    name: Debug destroy input
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Mostrar valor do input destroy
+        run: |
+          echo "event name: ${{ github.event_name }}"
+          echo "destroy input: ${{ github.event.inputs.destroy }}"
