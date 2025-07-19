@@ -1,23 +1,32 @@
-# Projeto - Gerador de Saudações Aleatórias (Dockerizado)
+# Projeto - CI/CD com Docker e Terraform
 
 ![Banner](./screenshots/banner.png)
 
-Este repositório apresenta um projeto completo de microsserviços desenvolvido com Docker e publicado no Docker Hub. Ele é composto por três partes principais:
+Este repositório contém a aplicação ms-saudacoes-aleatorias, desenvolvida em Golang, usada anteriormente no repositório [Projeto - Gerador de Saudações Aleatórias (Dockerizado)](https://github.com/leonildolinck/Avanti-DevOps-Desafio-3) junto com uma pipeline de CI/CD automatizada usando o GitHub Actions. O objetivo é garantir entregas consistentes, testadas e com provisionamento de infraestrutura automática usando Terraform na plataforma Koyeb.
 
-- **Frontend (HTML estático com Nginx)**  
-- **Microsserviço de Pessoas Aleatórias (FastAPI + SQLite)**  
-- **Microsserviço de Saudações Aleatórias (Go + SQLite)**  
+## Tecnologias Utilizadas
+- **Go 1.22**
 
----
+- **Docker**
+
+- **Terraform**
+
+- **GitHub Actions**
+
+- **Koyeb**
+
+- **Docker Hub**
+
 
 ## Sumário
 
-- [Projeto - Gerador de Saudações Aleatórias (Dockerizado)](#projeto---gerador-de-saudações-aleatórias-dockerizado)
+- [Projeto - CI/CD com Docker e Terraform](#projeto---cicd-com-docker-e-terraform)
+  - [Tecnologias Utilizadas](#tecnologias-utilizadas)
   - [Sumário](#sumário)
   - [Pré-requisitos](#pré-requisitos)
   - [Arquitetura do Projeto](#arquitetura-do-projeto)
-  - [1. Frontend: Site Gerador de Saudações](#1-frontend-site-gerador-de-saudações)
-    - [Dockerfile](#dockerfile)
+  - [Estrutura do Projeto](#estrutura-do-projeto)
+  - [1. Clonando a aplicação api-saudacoes-aleatorias diretamente na raiz](#1-clonando-a-aplicação-api-saudacoes-aleatorias-diretamente-na-raiz)
     - [Build da imagem](#build-da-imagem)
     - [Rodar localmente](#rodar-localmente)
   - [2. Backend: Microsserviço de Pessoas Aleatórias](#2-backend-microsserviço-de-pessoas-aleatórias)
@@ -40,47 +49,118 @@ Este repositório apresenta um projeto completo de microsserviços desenvolvido 
 ## Pré-requisitos
 
 - [Docker](https://docs.docker.com/engine/install/)
+- [Terraform](https://www.terraform.io/)
+- Conta no [GitHub](https://github.com/)
+- Conta no [Koyeb](https://www.koyeb.com/)
 - Conta no [Docker Hub](https://hub.docker.com/)
-- Terminal (Linux/Mac) ou PowerShell (Windows)
 
 ---
 
 ## Arquitetura do Projeto
 
 ```
-[ Navegador ]
-     ↓
-[ Nginx (Frontend) ]
-     ↓
- ┌────────────────────────────┐        ┌──────────────────────────┐
- │ API - Pessoas (Em Python)  │ <----> │ API - Saudações (em Go)  │
- └────────────────────────────┘        └──────────────────────────┘
+[ Desenv. Local / GitHub ]
+           │
+           ▼
+╔════════════════════════════════════════════════════════╗
+║                    GitHub Actions CI/CD                ║
+║--------------------------------------------------------║
+║   1. Lint       → go fmt, go vet, golangci-lint        ║
+║   2. Test       → gotestsum, junit report              ║
+║   3. Build      → Docker Buildx (multi-plataforma)     ║
+║   4. Push       → Docker Hub                           ║
+║   5. Deploy     → Terraform Apply na Koyeb             ║
+║   6. Cleanup    → Terraform Destroy (manual)           ║
+╚════════════════════════════════════════════════════════╝
+           │
+           ▼
+╔══════════════════════╗      ╔══════════════════════════╗
+║    Docker Hub        ║─────▶║     Koyeb (Infra Cloud)  ║
+║  leonildolinck/...   ║      ║  Container App Running   ║
+╚══════════════════════╝      ╚══════════════════════════╝
+                                      │
+                                      ▼
+                           https://<app>.koyeb.app
+
 ```
 
----
-
-## 1. Frontend: Site Gerador de Saudações
-
-### Dockerfile
-
-O `Dockerfile` é um arquivo de texto que contém as instruções para o Docker montar nossa imagem. Criei um arquivo chamado `Dockerfile` (sem extensão) na raiz do projeto, ao lado do `index.html`, com o seguinte conteúdo:
-
-```dockerfile
-# --- Estágio 1: Definir a imagem base ---
-# Usamos a imagem oficial do Nginx com a tag 'alpine'.
-# 'alpine' resulta em uma imagem muito menor, o que é ótimo para produção.
-FROM nginx:alpine
-
-# --- Estágio 2: Copiar os arquivos do projeto ---
-# Copia o arquivo 'index.html' da sua máquina local (o contexto do build)
-# para o diretório padrão onde o Nginx serve os arquivos HTML.
-COPY index.html /usr/share/nginx/html/index.html
-
-# --- Estágio 3: Expor a porta ---
-# Informa ao Docker que o contêiner escutará na porta 80 em tempo de execução.
-# Esta é a porta padrão do Nginx.
-EXPOSE 80
+## Estrutura do Projeto
 ```
+.
+├── Dockerfile                # Build da imagem da aplicação
+├── main.go                   # Código-fonte principal
+├── infra/                    # Arquivos Terraform para Koyeb
+│   ├── main.tf
+│   ├── variables.tf
+│   └── ...
+├── .github/
+│   └── workflows/
+│       └── main.yml          # Pipeline CI/CD
+└── README.md                 # Este arquivo
+```
+
+
+## 1. Clonando a aplicação api-saudacoes-aleatorias diretamente na raiz
+Esta aplicação foi escrita em Go (Golang) e implementa um microsserviço simples de geração de saudações aleatórias. Ela será a base da nossa pipeline CI/CD.
+
+Queremos clonar esse repositório diretamente na raiz do nosso projeto, sem que o Git crie uma subpasta, siga atentamente os comandos abaixo:
+```bash
+mkdir desafio-cicd
+cd desafio-cicd
+```
+```bash
+git clone https://github.com/leonildolinck/api-saudacoes-aleatorias.git .
+```
+> 💡
+> O "." (ponto) no final do comando indica que os arquivos devem ser clonados diretamente na pasta atual, sem criar uma subpasta com o nome do repositório, certifique-se que a aplicação está no diretório raiz.
+
+Após clonar o repositório, você verá os seguintes arquivos:
+
+```
+├── database/
+├── docs/
+├── handlers/
+├── infra/
+├── models/
+├── .envrc
+├── .gitignore
+├── Dockerfile
+├── README.md
+├── devbox.json
+├── go.mod
+├── go.sum
+└── main.go
+```
+
+
+Caso queira executar a aplicação localmente (precisa do [Docker](https://docs.docker.com/engine/install/) instalado):
+
+```bash
+docker build -t leonildolinck/api-saudacoes-aleatorias:latest .
+docker run -p 8080:8080 leonildolinck/api-saudacoes-aleatorias:latest
+```
+
+Teste com:
+
+```bash
+curl http://localhost:8080/api/saudacoes/aleatorio
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ### Build da imagem
