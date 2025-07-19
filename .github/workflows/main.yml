@@ -145,17 +145,32 @@ jobs:
           TF_VAR_docker_image_name: ${{ env.DOCKER_IMAGE_NAME }}
           TF_VAR_docker_image_tag: ${{ env.DOCKER_IMAGE_TAG }}
 
+      - name: Save Terraform state
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-state
+          path: |
+            infra/terraform.tfstate
+            infra/.terraform
+
+
   # Job para destruir a infraestrutura manualmente
+
   destroy:
     name: Destroy Staging
     runs-on: ubuntu-latest
-    # needs: deploy
-    # Executa apenas quando acionado manualmente (workflow_dispatch)
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' # Executa manualmente
     environment: staging
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Download Terraform state
+        uses: actions/download-artifact@v4
+        with:
+          name: terraform-state
+          path: infra
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
