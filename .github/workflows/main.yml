@@ -110,8 +110,8 @@ jobs:
           tags: |
             ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}
             ${{ env.DOCKER_IMAGE_NAME }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          #cache-from: type=gha
+          #cache-to: type=gha,mode=max
 
   # Job para fazer o deploy da aplicação
   deploy:
