@@ -134,6 +134,8 @@ jobs:
 
       - name: Set up Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ secrets.TFC_TOKEN }}
 
       - name: Terraform Init
         id: init
@@ -149,13 +151,6 @@ jobs:
         id: apply
         run: terraform -chdir=infra apply -auto-approve
         env:
+          KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
           TF_VAR_docker_image_name: ${{ env.DOCKER_IMAGE_NAME }}
           TF_VAR_docker_image_tag: ${{ env.DOCKER_IMAGE_TAG }}
-
-      - name: Save Terraform state
-        uses: actions/upload-artifact@v4
-        with:
-          name: terraform-state
-          path: |
-            infra/terraform.tfstate
-            infra/.terraform

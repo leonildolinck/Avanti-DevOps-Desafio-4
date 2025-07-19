@@ -8,28 +8,32 @@ jobs:
     name: Destroy Staging Infra
     runs-on: ubuntu-latest
     environment: staging
+    env:
+      KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
+      TFC_TOKEN: ${{ secrets.TFC_TOKEN }}
     steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
       - name: Baixar Terraform State
         uses: actions/download-artifact@v4
         with:
           name: terraform-state
           path: infra
 
-      - name: Checkout código
-        uses: actions/checkout@v4
-
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ secrets.TFC_TOKEN }}
 
       - name: Terraform Init
         run: terraform -chdir=infra init
         env:
-          KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
           TFC_TOKEN: ${{ secrets.TFC_TOKEN }}
-
 
       - name: Terraform Destroy
         run: terraform -chdir=infra destroy -auto-approve
         env:
           KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
-          TFC_TOKEN: ${{ secrets.TFC_TOKEN }}
+          TF_VAR_docker_image_name: ${{ env.DOCKER_IMAGE_NAME }}
+          TF_VAR_docker_image_tag: ${{ env.DOCKER_IMAGE_TAG }}
