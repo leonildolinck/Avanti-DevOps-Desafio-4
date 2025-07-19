@@ -1,6 +1,6 @@
 variable "app_name" {
   type    = string
-  default = "api-saudacoes-aleatorias"
+  default = "saudacoes-aleatorias"
 }
 
 variable "service_name" {
