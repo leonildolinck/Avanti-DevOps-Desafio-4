@@ -40,6 +40,7 @@ Este repositório contém a aplicação ms-saudacoes-aleatorias, desenvolvida em
     - [Estágio de Build](#estágio-de-build)
     - [Estágio Final](#estágio-final)
 - [4. Automatizando o CI/CD com GitHub Actions (```main.yaml```)](#4-automatizando-o-cicd-com-github-actions-mainyaml)
+    - [```main.yaml```](#mainyaml)
   - [```on:``` – Gatilhos de execução do pipeline](#on--gatilhos-de-execução-do-pipeline)
   - [```env:``` – Variáveis globais de ambiente](#env--variáveis-globais-de-ambiente)
   - [```jobs:```: – Execução em etapas](#jobs--execução-em-etapas)
@@ -48,7 +49,14 @@ Este repositório contém a aplicação ms-saudacoes-aleatorias, desenvolvida em
     - [```build-and-push:``` – Build e push da imagem Docker](#build-and-push--build-e-push-da-imagem-docker)
     - [```deploy:``` – Aplicação do Terraform na Koyeb](#deploy--aplicação-do-terraform-na-koyeb)
 - [5. Destruindo a Infraestrutura com GitHub Actions (```destroy.yaml```)](#5-destruindo-a-infraestrutura-com-github-actions-destroyyaml)
-- [Configurando o Github Actions](#configurando-o-github-actions)
+    - [```destroy.yaml```](#destroyyaml)
+- [6. Configurando o Github Actions](#6-configurando-o-github-actions)
+- [7. Funcionamento da esteira e testes](#7-funcionamento-da-esteira-e-testes)
+    - [Fazendo um commit (push)](#fazendo-um-commit-push)
+    - [Fazendo um Pull Request](#fazendo-um-pull-request)
+    - [Fazendo um deploy](#fazendo-um-deploy)
+    - [Destruindo a aplicação](#destruindo-a-aplicação)
+    - [Resultado](#resultado)
   - [Conclusão](#conclusão)
   - [Contato](#contato)
 
@@ -382,6 +390,19 @@ Como é um arquivo de texto, o Dockerfile pode ser versionado em sistemas como o
 YAML (YAML Ain't Markup Language) é uma linguagem de serialização de dados feita para ser fácil de ler. Ela usa indentação para organizar informações, como uma lista de tarefas ou configurações. Como o YAML é Usado em CI/CD
 Em esteiras de CI/CD (Integração Contínua/Entrega Contínua), o YAML é a escolha principal para definir como o trabalho deve ser feito. Ferramentas como GitHub Actions, GitLab CI/CD e Jenkins usam arquivos YAML.
 
+Antes de mais nada precisamos criar uma pasta /github e dentro dela uma pasta /workflows, para que possamos organizar nosso repositório, e que o GitHub Actions possa ler os arquivos:
+
+```bash
+mkdir github
+mkdir github/workflows
+cd github/workflows
+```
+
+
+Nele criaremos dois arquivos, ```main.yaml``` e ```destroy.yaml```.
+
+### ```main.yaml```
+
 ## ```on:``` – Gatilhos de execução do pipeline
 
 ```yaml
@@ -599,6 +620,8 @@ deploy:
 
 # 5. Destruindo a Infraestrutura com GitHub Actions (```destroy.yaml```)
 
+### ```destroy.yaml```
+
 ```yaml
 name: Destroy Infra
 
@@ -653,23 +676,75 @@ jobs:
      - **`Terraform Init`**: Inicializa o Terraform no diretório `infra`, configurando o backend remoto no Terraform Cloud.
      - **`Terraform Destroy`**: Executa o comando `terraform destroy -auto-approve` no diretório `infra`, que remove todos os recursos gerenciados pelo Terraform. O `-auto-approve` dispensa a confirmação manual. Variáveis `KOYEB_TOKEN`, `TF_VAR_docker_image_name`, e `TF_VAR_docker_image_tag` são passadas para o Terraform, embora as últimas duas sejam mais relevantes para o `apply` e possam ser ignoradas no `destroy` dependendo da configuração do Terraform.
 
-# Configurando o Github Actions
+# 6. Configurando o Github Actions
 
-Começamos criando um repositorio no githhub
+Para configurar o GitHub Actions para sua esteira de CI/CD, siga este passo a passo:
+
+**Criação do Repositório no GitHub**:
+Começamos criando um novo repositório no GitHub para hospedar o código da sua aplicação e os arquivos de configuração da esteira. Este será o centro do seu projeto, onde todas as automações serão definidas e executadas.
+
+**Criação do Workflow**:
+Dentro do nosso repositório, criamos um diretório .github/workflows/. e dentro dele, adicionamos dois arquivos YAML (```main.yml``` e ```destroy.yml``` ). Estes arquivos definirão a lógica da sua esteira de CI/CD, incluindo gatilhos, jobs e passos. É aqui que nós descrevemos anteriormente as ações de lint, teste, build e deploy.
+
+**Definição de Variáveis e Segredos**:
+No GitHub, vá para as configurações do seu repositório (Settings > Secrets and variables > Actions).
+![Settings](./screenshots/settings.png)
+
+**Variáveis (Variables)**: Criaremos variáveis para dados que não são sensíveis, como ```DOCKER_USER```.
+![Variables](./screenshots/cicd-gha-variables.png)
+
+**Segredos (Secrets)**: Armazenaremos informações sensíveis, como senhas (```DOCKER_PASS```) e tokens (```TFC_TOKEN```, ```KOYEB_TOKEN```), como segredos. Isso garante que nossas credenciais nunca sejam expostas no código ou nos logs da esteira.
+![Secrets](./screenshots/cicd-gha-secrets.png)
+
+
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.  
+.   
+.   
+
+
+# 7. Funcionamento da esteira e testes
+
+### Fazendo um commit (push)
+
+![Tests - Push](./screenshots/cicd-tests-push-done.png)
+
+### Fazendo um Pull Request
+
+![Tests - PR](./screenshots/cicd-tests-pullrequest-done.png)
+
+### Fazendo um deploy
+
+![CI/CD](./screenshots/cicd-deploy-done.png)
+
+### Destruindo a aplicação
+
+![Destroy](./screenshots/cicd-destroy-done.png)
+![Destroy Button](./screenshots/cicd-manually-destroy-button.png)
+
+### Resultado
+
+Imagem no dockerhub:
+![Docker Hub](./screenshots/docker-hub.png)
+
+Aplicação rodando no koyeb:
+![Koyeb](./screenshots/koyeb.png)
+![Resposta API](./screenshots/resposta-api.png)
+
+
+
+
+
+
 
 
 ## Conclusão
-
-![Docker Hub](./screenshots/docker-hub.png)
-![Destroy](./screenshots/cicd-destroy-done.png)
-![Secrets](./screenshots/cicd-gha-secrets.png)
-![Variables](./screenshots/cicd-gha-variables.png)
-![Destroy Button](./screenshots/cicd-manually-destroy-button.png)
-![Tests - PR](./screenshots/cicd-tests-pullrequest-done.png)
-![Tests - Push](./screenshots/cicd-tests-push-done.png)
-![CI/CD](./screenshots/cicd-deploy-done.png)
-
-
 
 ## Contato
 
