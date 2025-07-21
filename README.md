@@ -26,21 +26,29 @@ Este repositório contém a aplicação ms-saudacoes-aleatorias, desenvolvida em
   - [Pré-requisitos](#pré-requisitos)
   - [Arquitetura do Projeto](#arquitetura-do-projeto)
   - [Estrutura do Projeto](#estrutura-do-projeto)
-  - [1. Clonando a aplicação api-saudacoes-aleatorias diretamente na raiz](#1-clonando-a-aplicação-api-saudacoes-aleatorias-diretamente-na-raiz)
-    - [Build da imagem](#build-da-imagem)
-    - [Rodar localmente](#rodar-localmente)
-  - [2. Backend: Microsserviço de Pessoas Aleatórias](#2-backend-microsserviço-de-pessoas-aleatórias)
-    - [Back-end](#back-end)
-    - [Dockerfile (Multi-stage)](#dockerfile-multi-stage)
-    - [Build da imagem](#build-da-imagem-1)
-    - [Rodar localmente](#rodar-localmente-1)
-  - [3. Backend: Microsserviço de Saudações Aleatórias](#3-backend-microsserviço-de-saudações-aleatórias)
-    - [Dockerfile (Multi-stage)](#dockerfile-multi-stage-1)
-    - [Build da imagem](#build-da-imagem-2)
-    - [Rodar localmente](#rodar-localmente-2)
-  - [Utilizando Docker Compose](#utilizando-docker-compose)
-  - [Resultado final](#resultado-final)
-  - [Publicando no Docker Hub](#publicando-no-docker-hub)
+- [1. Clonando a aplicação api-saudacoes-aleatorias](#1-clonando-a-aplicação-api-saudacoes-aleatorias)
+- [2. Criando a IaC (Infrastructure as Code) com Terraform](#2-criando-a-iac-infrastructure-as-code-com-terraform)
+      - [```main.tf```](#maintf)
+    - [Configurando o provider koyeb](#configurando-o-provider-koyeb)
+    - [Criação da Aplicação (App) na Koyeb](#criação-da-aplicação-app-na-koyeb)
+    - [Criando o serviço de aplicação e definindo suas variáveis de ambiente (```main.tf```)](#criando-o-serviço-de-aplicação-e-definindo-suas-variáveis-de-ambiente-maintf)
+    - [Definindo as variáveis utilizadas através do arquivo (```variables.tf```).](#definindo-as-variáveis-utilizadas-através-do-arquivo-variablestf)
+      - [```variables.tf```](#variablestf)
+- [3. Criando o Dockerfile](#3-criando-o-dockerfile)
+  - [Dockerfile multi-stage para a aplicação Go](#dockerfile-multi-stage-para-a-aplicação-go)
+    - [```Dockerfile```](#dockerfile)
+    - [Estágio de Build](#estágio-de-build)
+    - [Estágio Final](#estágio-final)
+- [4. Automatizando o CI/CD com GitHub Actions (```main.yaml```)](#4-automatizando-o-cicd-com-github-actions-mainyaml)
+  - [```on:``` – Gatilhos de execução do pipeline](#on--gatilhos-de-execução-do-pipeline)
+  - [```env:``` – Variáveis globais de ambiente](#env--variáveis-globais-de-ambiente)
+  - [```jobs:```: – Execução em etapas](#jobs--execução-em-etapas)
+    - [```lint:``` – Verificação de estilo e qualidade de código](#lint--verificação-de-estilo-e-qualidade-de-código)
+    - [```test:``` – Execução dos testes automatizados](#test--execução-dos-testes-automatizados)
+    - [```build-and-push:``` – Build e push da imagem Docker](#build-and-push--build-e-push-da-imagem-docker)
+    - [```deploy:``` – Aplicação do Terraform na Koyeb](#deploy--aplicação-do-terraform-na-koyeb)
+- [5. Destruindo a Infraestrutura com GitHub Actions (```destroy.yaml```)](#5-destruindo-a-infraestrutura-com-github-actions-destroyyaml)
+- [Configurando o Github Actions](#configurando-o-github-actions)
   - [Conclusão](#conclusão)
   - [Contato](#contato)
 
@@ -51,6 +59,7 @@ Este repositório contém a aplicação ms-saudacoes-aleatorias, desenvolvida em
 - [Docker](https://docs.docker.com/engine/install/)
 - [Terraform](https://www.terraform.io/)
 - Conta no [GitHub](https://github.com/)
+- Conta no [Terraform](https://terraform.io/)
 - Conta no [Koyeb](https://www.koyeb.com/)
 - Conta no [Docker Hub](https://hub.docker.com/)
 
@@ -100,7 +109,7 @@ Este repositório contém a aplicação ms-saudacoes-aleatorias, desenvolvida em
 ```
 
 
-## 1. Clonando a aplicação api-saudacoes-aleatorias diretamente na raiz
+# 1. Clonando a aplicação api-saudacoes-aleatorias
 Esta aplicação foi escrita em Go (Golang) e implementa um microsserviço simples de geração de saudações aleatórias. Ela será a base da nossa pipeline CI/CD.
 
 Queremos clonar esse repositório diretamente na raiz do nosso projeto, sem que o Git crie uma subpasta, siga atentamente os comandos abaixo:
@@ -146,240 +155,521 @@ Teste com:
 curl http://localhost:8080/api/saudacoes/aleatorio
 ```
 
+# 2. Criando a IaC (Infrastructure as Code) com Terraform
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-### Build da imagem
- 
-```bash
-cd site
-docker build -t leonildolinck/gerador-saudacoes:1.0 .
-```
-![Build](./screenshots/site-docker-build.png)
-
-### Rodar localmente
+Antes de mais nada precisamos criar uma pasta /infra, para organizar nosso repositório:
 
 ```bash
-docker run -d -p 8080:80 leonildolinck/gerador-saudacoes:1.0
+mkdir infra
+cd infra
 ```
 
-![Run](./screenshots/site-docker-run.png)
+Nele criaremos dois arquivos, ```main.tf``` e ```variables.tf```.
 
-Acesse via: [http://localhost:8080](http://localhost:8080)
+#### ```main.tf```
 
-![Localhost](./screenshots/site-localhost.png)
 
-> **Nota:** Perceba que o site apresenta erro, devido a falha em acessar os containeres back-end, vamos resolver isso a seguir.
-
----
-
-## 2. Backend: Microsserviço de Pessoas Aleatórias
-
-### Back-end
-
-Agora que temos o front-end ativo, precisamos colocar no ar os servidores back-end, que serão responsáveis por toda a parte de respostas dinâmicas do site, como acessar o banco de dados de saudações ou inserir novas saudações.
-
-### Dockerfile (Multi-stage)
-
-O Multi-Stage Build serve para criar imagens Docker mais leves e seguras, separando o processo de construção (instalação de dependências, compilação, etc.) do ambiente final de execução da aplicação.
-
-```dockerfile
-# Builder
-FROM python:3.13-slim as builder
-WORKDIR /app
-COPY requirements.txt .
-RUN pip wheel --no-cache-dir --wheel-dir /app/wheels -r requirements.txt
-
-# Final
-FROM python:3.13-slim
-WORKDIR /app
-COPY --from=builder /app/wheels /app/wheels
-COPY . .
-RUN pip install --no-cache-dir /app/wheels/*
-EXPOSE 8000
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
-```
-
-### Build da imagem
+Após criar o diretório, começamos definindo nossa infraestrtura de deploy, no caso com Terraform, com a seguinte estrutura:
 
 ```bash
-cd api-pessoas-aleatorias
-docker build -t leonildolinck/api-pessoas-aleatorias:1.0 .
-```
-![Pessoas Docker Build](./screenshots/pessoas-docker-build2.png)
+terraform {
+  backend "remote" {
+    organization = "leonildo-devops"
 
-### Rodar localmente
+    workspaces {
+      name = "saudacoes-terraform"
+    }
+  }
+
+  required_providers {
+    koyeb = {
+      source = "koyeb/koyeb"
+    }
+  }
+}
+```
+> 💡
+> Estamos utilizando um backend remoto (Terraform Cloud) para armazenar o arquivo ```terraform.tfstate```, que contém o estado da infraestrutura provisionada.
+
+> Isso é essencial para garantir a persistência do estado entre execuções independentes do GitHub Actions, como no caso da execução do workflow ```destroy.yaml```, que ocorre separadamente do workflow principal ```main.yml```.
+
+> Além disso, como o GitHub Actions não compartilha artefatos entre workflows automaticamente, precisamos de um local persistente e centralizado para armazenar o estado. Embora fosse possível usar um backend como o Amazon S3 para armazenamento desse objeto, o uso do Terraform Cloud foi a solução mais prática e rápida neste cenário.
+### Configurando o provider koyeb
 
 ```bash
-docker run -d -p 8000:8000 leonildolinck/api-pessoas-aleatorias:1.0
+provider "koyeb" { 
+}
 ```
-![Pessoas Docker Run](./screenshots/pessoas-docker-run.png)
 
-Acesse/teste via:
+ Aqui você estamos declarando que vamnos usar o provider koyeb.
+A autenticação é feita por variável de ambiente KOYEB_TOKEN, que configuramos previamente como secret no GitHub Actions (ou localmente no terminal para testes manuais).
 
-- [http://localhost:8000/docs](http://localhost:8000/docs)
-- [http://localhost:8000/pessoas/aleatoria](http://localhost:8000/pessoas/aleatoria)
+### Criação da Aplicação (App) na Koyeb
+```bash
+resource "koyeb_app" "my-app" {
+  name = var.app_name
+}
+```
 
----
+O nome da aplicação vem de uma variável (var.app_name), declarada no variables.tf. Este recurso não faz deploy ainda, ele apenas garante que o “contêiner lógico” da app exista.
 
-## 3. Backend: Microsserviço de Saudações Aleatórias
+### Criando o serviço de aplicação e definindo suas variáveis de ambiente (```main.tf```)
 
-### Dockerfile (Multi-stage)
+```bash
+resource "koyeb_service" "my-service" {
+  app_name = var.app_name
+  definition {
+    name = var.service_name
+    instance_types {
+      type = "free"
+    }
+    ports {
+      port     = var.container_port
+      protocol = "http"
+    }
+    scalings {
+      min = 0
+      max = 1
+    }
+    routes {
+      path = "/"
+      port = var.container_port
+    }
+    health_checks {
+      http {
+        port = var.container_port
+        path = "/api/saudacoes/aleatorio"
+      }
+    }
+    regions = ["was"]
+    docker {
+      image = "${var.docker_image_name}:${var.docker_image_tag}"
+    }
+  }
 
-Novamente, o Multi-Stage Build serve para criar imagens Docker mais leves e seguras, separando o processo de construção (instalação de dependências, compilação, etc.) do ambiente final de execução da aplicação.
+  depends_on = [
+    koyeb_app.my-app
+  ]
+}
+```
+Aqui é onde o container de fato é criado e exposto.
 
-```dockerfile
-# Builder
+ - Ele é vinculado ao app anterior por meio de ```app_name = var.app_name``` e  
+ configurações complementares:
+
+   - O nome do serviço é definido pela variável ```var.service_name```, que será exibido no 
+ painel da Koyeb.
+
+   - O plano utilizado é o gratuito (```instance_types.type = "free"```), ideal para testes e pequenos projetos.
+
+   - O container é exposto via protocolo HTTP na porta definida em ```var.container_port``` (valor padrão: 8080).
+
+   - O escalonamento automático está configurado com ```min = 0``` e ```max = 1```, permitindo economia de recursos.
+
+   - A rota ```/``` é configurada para redirecionar o tráfego externo para a porta do container.
+
+   - O health check HTTP utiliza o endpoint ```/api/saudacoes/aleatorio```. Se este caminho não responder, o serviço será marcado como "unhealthy".
+
+   - A aplicação é implantada na região ```"was"``` (Washington, DC), podendo ser alterada para "fra" (Frankfurt) conforme a necessidade.
+
+   - A imagem Docker utilizada é definida pelas variáveis ```docker_image_name``` e ```docker_image_tag```, geradas durante o processo de CI/CD:
+
+     - Nome: ```leonildolinck/api-saudacoes-aleatorias```
+
+     - Tag: ```latest``` ou ```1.0.xxxxx``` (incremental com base no github.run_id)
+
+ - O recurso ```koyeb_service``` possui dependência explícita de ```koyeb_app.my-app```, garantindo a criação da aplicação antes do serviço (```depends_on```).
+
+### Definindo as variáveis utilizadas através do arquivo (```variables.tf```).
+
+#### ```variables.tf```
+
+```bash
+variable "app_name" {
+  type    = string
+  default = "saudacoes-aleatorias"
+}
+
+variable "service_name" {
+  type    = string
+  default = "saudacoes-aleatorias"
+}
+
+variable "instance_type" {
+  type    = string
+  default = "free"
+}
+
+variable "container_port" {
+  type    = number
+  default = 8080
+}
+
+variable "docker_image_name" {
+  type    = string
+  default = "leonildolinck/api-saudacoes-aleatorias"
+}
+
+variable "docker_image_tag" {
+  type    = string
+  default = "latest"
+}  
+```
+
+# 3. Criando o Dockerfile
+
+## Dockerfile multi-stage para a aplicação Go
+Aqui criaremos nosso  ```Dockerfile```, ele será um script que define, passo a passo, todos os comandos necessários para montar uma imagem Docker.
+A principal função do ```Dockerfile``` é automatizar o processo de criação de imagens o Docker lê o Dockerfile e executa cada instrução em ordem. Garante que o ambiente da aplicação seja exatamente o mesmo, independentemente de onde a imagem será executada.
+
+### ```Dockerfile```
+```Dockerfile
 FROM golang:1.24-alpine AS builder
+
 RUN apk add --no-cache build-base gcc
+
 WORKDIR /app
+
 COPY go.mod go.sum ./
+
 RUN go mod download
+
 COPY . .
+
 RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o /app/main .
 
-# Final
 FROM alpine:latest
+
 WORKDIR /app
+
 COPY --from=builder /app/main .
+
 EXPOSE 8080
+
 CMD ["./main"]
 ```
 
-### Build da imagem
+> 💡
+> Este `Dockerfile` utiliza uma abordagem multi-stage para criar uma imagem Docker **otimizada e pequena** para uma aplicação Go, garantindo que apenas o binário compilado e suas dependências essenciais estejam na imagem final.
 
-```bash
-docker build -t leonildolinck/api-saudacoes-aleatorias:1.0 .
-```
-![Pessoas Docker Build](./screenshots/saudacoes-docker-build.png)
+ ### Estágio de Build
 
-### Rodar localmente
+ - **`FROM golang:1.24-alpine AS builder`**: Inicia com uma imagem Go baseada em Alpine, que é leve, e a nomeia como `builder`.
+ - **`RUN apk add --no-cache build-base gcc`**: Instala ferramentas de compilação C (`build-base` e `gcc`), necessárias para compilar o SQLite e outras bibliotecas C que o Go possa usar via CGO.
+ - **`WORKDIR /app`**: Define `/app` como o diretório de trabalho dentro do contêiner.
+ - **`COPY go.mod go.sum ./`**: Copia os arquivos de módulos Go primeiro para aproveitar o cache do Docker e acelerar builds futuros.
+ - **`RUN go mod download`**: Baixa as dependências do Go.
+ - **`COPY . .`**: Copia todo o código-fonte da aplicação.
+ - **`RUN CGO_ENABLED=1 GOOS=linux go build -a -installsuffix cgo -o /app/main .`**: Compila a aplicação Go:
+   - **`CGO_ENABLED=1`**: Habilita o CGO, necessário para a biblioteca `sqlite3` que tem bindings em C.
+   - **`GOOS=linux`**: Garante que o binário seja compilado para Linux.
+   - **`-a`**: Força a reconstrução de todos os pacotes, mesmo os que parecem atualizados.
+   - **`-installsuffix cgo`**: Adiciona um sufixo para evitar conflitos de cache entre pacotes compilados com e sem CGO.
+   - **`-o /app/main`**: Define o nome e o caminho do binário compilado como `/app/main`. O resultado é um binário **estaticamente vinculado**, o que significa que ele não precisará da `libsqlite3.so` na imagem final.
 
-```bash
-docker run -d -p 8081:8080 leonildolinck/api-saudacoes-aleatorias:1.0
-```
+ ### Estágio Final
 
-![Pessoas Docker Run](./screenshots/saudacoes-docker-run.png)
+ - **`FROM alpine:latest`**: Inicia um novo estágio com a imagem Alpine mínima, resultando em uma imagem final bem reduzida.
+ - **`WORKDIR /app`**: Define `/app` como o diretório de trabalho.
+ - **`COPY --from=builder /app/main .`**: Copia apenas o binário `main` compilado do estágio `builder` para a imagem final. Esta é a grande vantagem do multi-stage: o tamanho final da imagem é minimizado, pois as ferramentas de compilação e dependências de build não são incluídas.
+ - **`EXPOSE 8080`**: Informa que a aplicação dentro do contêiner escuta na porta `8080`.
+ - **`CMD ["./main"]`**: Define o comando que será executado quando o contêiner for iniciado, rodando o binário da aplicação. O banco de dados `greetings.db` será criado pela aplicação na primeira execução, se não existir.
 
-Testes via `curl`:
+Como é um arquivo de texto, o Dockerfile pode ser versionado em sistemas como o Git, isso permite a rastreabilidade e a colaboração. Cada instrução em um ```Dockerfile``` cria uma nova camada na imagem Docker. O Docker aproveita o cache dessas camadas para agilizar builds futuras, reconstruindo apenas as camadas que foram modificadas
 
-```bash
-curl http://localhost:8081/api/saudacoes/aleatorio
-```
-![Saudações CURL](./screenshots/saudacoes-curl.png)
+# 4. Automatizando o CI/CD com GitHub Actions (```main.yaml```)
 
----
+YAML (YAML Ain't Markup Language) é uma linguagem de serialização de dados feita para ser fácil de ler. Ela usa indentação para organizar informações, como uma lista de tarefas ou configurações. Como o YAML é Usado em CI/CD
+Em esteiras de CI/CD (Integração Contínua/Entrega Contínua), o YAML é a escolha principal para definir como o trabalho deve ser feito. Ferramentas como GitHub Actions, GitLab CI/CD e Jenkins usam arquivos YAML.
 
-## Utilizando Docker Compose
-
-Gerenciar vários containers manualmente com ``docker run`` pode se tornar trabalhoso e propenso a erros. Para simplificar e automatizar o processo, utilizamos o **Docker Compose**, uma ferramenta que nos permite definir e orquestrar aplicações multi-containers a partir de um único arquivo: ``docker-compose.yml``.
-
-Com ele, conseguimos:
-
-Subir os três serviços (frontend, API de pessoas e API de saudações) com um único comando.
-
-Garantir que os containers se comuniquem entre si por nome (sem precisar de IPs fixos).
-
-Facilitar o desenvolvimento local.
+## ```on:``` – Gatilhos de execução do pipeline
 
 ```yaml
-services:
-  site:
-    image: leonildolinck/gerador-saudacoes:1.0
-    ports:
-      - "80:80"
-    depends_on:
-      - api-pessoas-aleatorias
-      - api-saudacoes-aleatorias
-    networks:
-      - backend
+on:
+  push:
+    branches:
+      - main
+      - "*"
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      destroy:
+        description: "Destruir a infra após deploy?"
+        required: false
+        default: "false"
 
-  api-pessoas-aleatorias:
-    image: leonildolinck/api-pessoas-aleatorias:1.0
-    ports:
-      - "8000:8000"
-    networks:
-      - backend
+```
+ Define os eventos que disparam o pipeline:
 
-  api-saudacoes-aleatorias:
-    image: leonildolinck/api-saudacoes-aleatorias:1.0
-    ports:
-      - "8081:8080"
-    networks:
-      - backend
-networks:
-  backend: {}
+ - ```push:``` roda a pipeline ao fazer push na branch ```main``` ou em qualquer outra (```*```).
+ 
+ - ```pull_request```: roda para PRs que visam a branch ```main```.
+ 
+ - ``` workflow_dispatch```: permite rodar manualmente via GitHub com a opção de marcar/desmarcar se deseja destruir a infra após o deploy (```destroy```).
+
+## ```env:``` – Variáveis globais de ambiente
+```yaml
+env:
+  DOCKER_USER: ${{ vars.DOCKER_USER }}
+  DOCKER_PASS: ${{ secrets.DOCKER_PASS }}
+  DOCKER_IMAGE_NAME: ${{ vars.DOCKER_USER }}/api-saudacoes-aleatorias
+  DOCKER_IMAGE_TAG: 1.0.${{ github.run_id }}
+  SERVICE_NAME: saudacoes-aleatorias
 ```
 
-```bash
-# Subir os containers em segundo plano:
-docker compose up -d
+Variáveis disponíveis para todos os jobs:
+
+ - ```DOCKER_USER```: usuário do Docker Hub (via GitHub Variables).
+
+ - ```DOCKER_PASS```: senha do Docker Hub (via GitHub Secrets).
+
+ - ```DOCKER_IMAGE_NAME```: nome da imagem Docker.
+
+ - ```DOCKER_IMAGE_TAG```: tag única baseada no ID da execução (```run_id```).
+
+ - ```SERVICE_NAME```: nome do serviço implantado na Koyeb.
+
+## ```jobs:```: – Execução em etapas
+### ```lint:``` – Verificação de estilo e qualidade de código
+```yaml
+lint:
+  name: Lint Code
+  runs-on: ubuntu-latest
+  if: github.ref_name != 'main'
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: "1.22"
+
+    - name: Go Fmt & Vet
+      run: |
+        echo "Linting code with go fmt and go vet..."
+        go fmt $(go list ./...)
+        go vet $(go list ./...)
+    - name: Run golangci-lint
+      uses: golangci/golangci-lint-action@v7
+      with:
+        version: v2.2.2
+        args: --verbose
 ```
 
-![Compose UP](./screenshots/docker-compose.png)
+Executa ferramentas de lint (análise estática) para garantir boas práticas. Só é executado fora da ```main```:
 
-```bash
-# Derrubar os containers e liberar os recursos:
-docker compose down
+ - ```go fmt```, ```go vet```: formatação e verificação básica.
+
+ - ```golangci-lint```: análise profunda e multi-linter para código Go.
+
+### ```test:``` – Execução dos testes automatizados
+
+```yaml
+test:
+  name: Run Go Tests
+  runs-on: ubuntu-latest
+  needs: lint
+  if: github.ref_name != 'main'
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Go
+      uses: actions/setup-go@v5
+      with:
+        go-version: "1.22"
+
+    - name: Install gotestsum
+      run: go install gotest.tools/gotestsum@latest
+
+    - name: Run tests and generate report
+      run: |
+        echo "Running tests and generating report..."
+        CGO_ENABLED=1 gotestsum --junitfile report.xml --format testname
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-reports
+        path: report.xml
 ```
 
-![Compose Down](./screenshots/compose-down.png)
+ Executa testes com relatório JUnit:
 
-## Resultado final
+ - Instala ```gotestsum``` para formatar os testes.
 
-Com isso, temos o site rodando em um container com Nginx, a API de Pessoas em um container com Python, e a API de Saudações em um container com Go.
+ - ```CGO_ENABLED=1``` é ativado para compatibilidade.
 
+ - Sempre faz o upload do ```report.xml```, mesmo em caso de falha.
 
-![Saudações CURL](./screenshots/site-funcionando.png)
+### ```build-and-push:``` – Build e push da imagem Docker
 
-## Publicando no Docker Hub
+```yaml
+build-and-push:
+  name: Build and Push Docker Image
+  runs-on: ubuntu-latest
+  if: github.event_name == 'push' && github.ref_name == 'main'
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
 
-Agora chegou o momento de publicar nossas imagens no Docker Hub, um repositório de imagens de containers, assim como o GitHub é um repositório para códigos-fonte.
+    - name: Set up QEMU
+      uses: docker/setup-qemu-action@v3
 
-1. Faça login:
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
 
-```bash
-docker login
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ env.DOCKER_USER }}
+        password: ${{ secrets.DOCKER_PASS }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        platforms: linux/amd64,linux/arm64
+        push: true
+        tags: |
+          ${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}
+          ${{ env.DOCKER_IMAGE_NAME }}:latest
+```
+ Compila e publica a imagem Docker com suporte a múltiplas arquiteturas:
+
+ - Usa **QEMU** e **buildx** para builds multiplataforma.
+
+ - Faz login no Docker Hub com os segredos.
+
+ - Envia a imagem com duas tags: uma única (```1.0.run_id```) e outra ```latest```.
+
+### ```deploy:``` – Aplicação do Terraform na Koyeb
+
+```yaml
+deploy:
+  name: Deploy to Staging
+  runs-on: ubuntu-latest
+  needs: build-and-push
+  if: github.event_name == 'push' && github.ref_name == 'main'
+  environment: staging
+  env:
+    TFC_TOKEN: ${{ secrets.TFC_TOKEN }}
+    KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
+  steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Terraform
+      uses: hashicorp/setup-terraform@v3
+      with:
+        cli_config_credentials_token: ${{ secrets.TFC_TOKEN }}
+
+    - name: Terraform Init
+      id: init
+      run: terraform -chdir=infra init
+      env:
+        TFC_TOKEN: ${{ secrets.TFC_TOKEN }}
+
+    - name: Terraform Validate
+      id: validate
+      run: terraform -chdir=infra validate
+
+    - name: Terraform Apply
+      id: apply
+      run: terraform -chdir=infra apply -auto-approve
+      env:
+        KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
+        TF_VAR_docker_image_name: ${{ env.DOCKER_IMAGE_NAME }}
+        TF_VAR_docker_image_tag: ${{ env.DOCKER_IMAGE_TAG }}
 ```
 
-2. Envie as imagens:
+ Provisiona (ou atualiza) a infraestrutura da aplicação com Terraform:
 
-```bash
-docker push leonildolinck/gerador-saudacoes:1.0
-```
-![Site Push](./screenshots/site-push.png)
-```bash
-docker push leonildolinck/api-pessoas-aleatorias:1.0
-```
-![Pessoas Push](./screenshots/pessoas-push.png)
-```bash
-docker push leonildolinck/api-saudacoes-aleatorias:1.0
-```
-![Saudações Push](./screenshots/saudacoes-push.png)
+ - Só executa após **```build-and-push```**.
 
----
+ - Usa o **Terraform Cloud** (via ```TFC_TOKEN```) como backend remoto.
 
-![Saudações Push](./screenshots/dockerhub.png)
+ - Define o ambiente como **```staging```** (pode ser usado para proteger o deploy).
+
+ - Passa as variáveis de imagem Docker para o Terraform (```TF_VAR_*```).
+
+
+# 5. Destruindo a Infraestrutura com GitHub Actions (```destroy.yaml```)
+
+```yaml
+name: Destroy Infra
+
+on:
+  workflow_dispatch:
+
+jobs:
+  destroy:
+    name: Destroy Staging Infra
+    runs-on: ubuntu-latest
+    environment: staging
+    env:
+      KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
+      TFC_TOKEN: ${{ secrets.TFC_TOKEN }}
+    steps:
+      - name: Checkout código
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          cli_config_credentials_token: ${{ secrets.TFC_TOKEN }}
+
+      - name: Terraform Init
+        run: terraform -chdir=infra init
+        env:
+          TFC_TOKEN: ${{ secrets.TFC_TOKEN }}
+
+      - name: Terraform Destroy
+        run: terraform -chdir=infra destroy -auto-approve
+        env:
+          KOYEB_TOKEN: ${{ secrets.KOYEB_TOKEN }}
+          TF_VAR_docker_image_name: ${{ env.DOCKER_IMAGE_NAME }}
+          TF_VAR_docker_image_tag: ${{ env.DOCKER_IMAGE_TAG }}
+```
+
+
+ Este workflow é responsável por destruir a infraestrutura no ambiente de **staging**.
+
+ - **`on: workflow_dispatch`**: Indica que este workflow só pode ser executado **manualmente** (via interface do GitHub).
+
+ - **`jobs: destroy`**: Define o único job neste workflow, chamado "destroy".
+   - **`name: Destroy Staging Infra`**: Nome descritivo do job.
+   - **`runs-on: ubuntu-latest`**: O job será executado em uma máquina virtual Ubuntu.
+  - **`environment: staging`**: Vincula o job ao ambiente `staging`, o que pode impor proteções de ambiente.
+   - **`env`**: Define variáveis de ambiente específicas para este job.
+     - `KOYEB_TOKEN`: Token para autenticação na Koyeb (via GitHub Secrets).
+     - `TFC_TOKEN`: Token para autenticação no Terraform Cloud (via GitHub Secrets).
+   - **`steps`**: Sequência de ações a serem executadas.
+     - **`Checkout código`**: Clona o repositório.
+     - **`Setup Terraform`**: Configura o Terraform na máquina, usando o `TFC_TOKEN` para autenticação no Terraform Cloud.
+     - **`Terraform Init`**: Inicializa o Terraform no diretório `infra`, configurando o backend remoto no Terraform Cloud.
+     - **`Terraform Destroy`**: Executa o comando `terraform destroy -auto-approve` no diretório `infra`, que remove todos os recursos gerenciados pelo Terraform. O `-auto-approve` dispensa a confirmação manual. Variáveis `KOYEB_TOKEN`, `TF_VAR_docker_image_name`, e `TF_VAR_docker_image_tag` são passadas para o Terraform, embora as últimas duas sejam mais relevantes para o `apply` e possam ser ignoradas no `destroy` dependendo da configuração do Terraform.
+
+# Configurando o Github Actions
+
+Começamos criando um repositorio no githhub
+
 
 ## Conclusão
 
-Este projeto explora o uso de **Docker** e **microserviços** para construir uma aplicação modular, leve e pronta para produção. Cada serviço é independente e pode ser versionado e publicado separadamente no Docker Hub.
+![Docker Hub](./screenshots/docker-hub.png)
+![Destroy](./screenshots/cicd-destroy-done.png)
+![Secrets](./screenshots/cicd-gha-secrets.png)
+![Variables](./screenshots/cicd-gha-variables.png)
+![Destroy Button](./screenshots/cicd-manually-destroy-button.png)
+![Tests - PR](./screenshots/cicd-tests-pullrequest-done.png)
+![Tests - Push](./screenshots/cicd-tests-push-done.png)
+![CI/CD](./screenshots/cicd-deploy-done.png)
 
----
+
 
 ## Contato
 

@@ -1,9 +1,9 @@
 terraform {
   backend "remote" {
-    organization = "leonildo-devops" # Substitua pelo nome da sua organização no Terraform Cloud
+    organization = "leonildo-devops"
 
     workspaces {
-      name = "saudacoes-terraform" # Substitua pelo nome do seu workspace
+      name = "saudacoes-terraform"
     }
   }
 
@@ -15,7 +15,7 @@ terraform {
 }
 
 provider "koyeb" {
-  # Use a variável de ambiente KOYEB_TOKEN para autenticação
+
 }
 
 resource "koyeb_app" "my-app" {
