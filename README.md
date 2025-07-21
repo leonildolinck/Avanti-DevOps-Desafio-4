@@ -696,34 +696,23 @@ No GitHub, vá para as configurações do seu repositório (Settings > Secrets a
 **Segredos (Secrets)**: Armazenaremos informações sensíveis, como senhas (```DOCKER_PASS```) e tokens (```TFC_TOKEN```, ```KOYEB_TOKEN```), como segredos. Isso garante que nossas credenciais nunca sejam expostas no código ou nos logs da esteira.
 ![Secrets](./screenshots/cicd-gha-secrets.png)
 
-
-.  
-.  
-.  
-.  
-.  
-.  
-.  
-.  
-.   
-.   
-
-
 # 7. Funcionamento da pipeline no GitHub Actions
 
 ### Fazendo um commit (push)
 
-Nessa primeira etapa de nosso pipeline, ele recebe um código em um branch e faz testes de lint (qualidade do código) e unitários (testes automatizados).
+Nesta primeira etapa do pipeline, o código é recebido em um branch e passa por testes de lint (qualidade do código) e testes unitários (testes automatizados).
 
 ![Tests - Push](./screenshots/cicd-tests-push-done.png)
 
 ### Fazendo um Pull Request
 
-Ao aprovar (manualmente) um Pull Request e fazer um Merge Request, o código é testado novamente, pode parecer redundante, mas é essencial para atestar a qualidade do código, após o Merge Request ser aprovado.
+Ao aprovar e mesclar um Pull Request, o código é testado novamente. Pode parecer redundante, mas é essencial para atestar a qualidade do código.
 
 ![Tests - PR](./screenshots/cicd-tests-pullrequest-done.png)
 
 ### Fazendo um deploy
+
+Após os testes, uma imagem Docker é criada e enviada para o Docker Hub. Em seguida, o Terraform provisiona a infraestrutura no Koyeb.
 
 ![CI/CD](./screenshots/cicd-deploy-done.png)
 
@@ -746,14 +735,13 @@ Aqui faremos um requisição HTTP para a API, que nos responderá conforme o có
 
 ![Resposta API](./screenshots/api-response.png)
 
-
-
-
-
-
-
-
 ## Conclusão
+
+Neste projeto, exploramos as etapas de uma esteira CI/CD no GitHub Actions, desde o provisionamento de infraestrutura até a criação e hospedagem de contêineres Docker no Docker Hub.
+
+Este trabalho tem um objetivo educacional, aplicando as práticas aprendidas no BootCamp Avanti DevOps do Instituto Atlântico Avanti.
+
+Sinta-se a vontade para fazer qualquer comentário ou sugestão!
 
 ## Contato
 
