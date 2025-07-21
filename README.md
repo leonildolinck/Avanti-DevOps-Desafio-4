@@ -149,20 +149,6 @@ Após clonar o repositório, você verá os seguintes arquivos:
 └── main.go
 ```
 
-
-Caso queira executar a aplicação localmente (precisa do [Docker](https://docs.docker.com/engine/install/) instalado):
-
-```bash
-docker build -t leonildolinck/api-saudacoes-aleatorias:latest .
-docker run -p 8080:8080 leonildolinck/api-saudacoes-aleatorias:latest
-```
-
-Teste com:
-
-```bash
-curl http://localhost:8080/api/saudacoes/aleatorio
-```
-
 # 2. Criando a IaC (Infrastructure as Code) com Terraform
 
 Antes de mais nada precisamos criar uma pasta /infra, para organizar nosso repositório:
@@ -384,6 +370,23 @@ CMD ["./main"]
  - **`CMD ["./main"]`**: Define o comando que será executado quando o contêiner for iniciado, rodando o binário da aplicação. O banco de dados `greetings.db` será criado pela aplicação na primeira execução, se não existir.
 
 Como é um arquivo de texto, o Dockerfile pode ser versionado em sistemas como o Git, isso permite a rastreabilidade e a colaboração. Cada instrução em um ```Dockerfile``` cria uma nova camada na imagem Docker. O Docker aproveita o cache dessas camadas para agilizar builds futuras, reconstruindo apenas as camadas que foram modificadas
+
+Caso queira executar a aplicação localmente (precisa do [Docker](https://docs.docker.com/engine/install/) instalado):
+
+```bash
+docker build -t leonildolinck/api-saudacoes-aleatorias:latest .
+docker run -d -p 8080:8080 leonildolinck/api-saudacoes-aleatorias:latest
+```
+
+![Docker Locally](./screenshots/docker-locally.png)
+
+Teste com:
+
+```bash
+curl http://localhost:8080/api/saudacoes/aleatorio
+```
+
+![Docker Local Curl](./screenshots/docker-local-curl.png)
 
 # 4. Automatizando o CI/CD com GitHub Actions (```main.yaml```)
 
@@ -714,19 +717,25 @@ Ao aprovar e mesclar um Pull Request, o código é testado novamente. Pode parec
 
 Após os testes, uma imagem Docker é criada e enviada para o Docker Hub. Em seguida, o Terraform provisiona a infraestrutura no Koyeb.
 
-![CI/CD](./screenshots/cicd-deploy-done.png)
+![CI/CD](./screenshots/cicd-deploy.png)
 
 ### Destruindo a aplicação
 
-![Destroy](./screenshots/cicd-destroy-done.png)
+Para destruir temos que manualmente iniciar o workflow ```destroy.yaml```.
+
 ![Destroy Button](./screenshots/cicd-manually-destroy-button.png)
+
+Após isso toda a infraestrutura provisionada no Koyeb é destruída.
+
+![Destroy](./screenshots/cicd-destroy-done.png)
+
 
 ### Resultado
 
-Imagem no dockerhub:
+Imagem no dockerhub com versionamento através de tags:
 ![Docker Hub](./screenshots/docker-hub.png)
 
-Aplicação rodando no koyeb:
+Aplicação (container) rodando no koyeb, pronto para uso:
 ![Koyeb](./screenshots/koyeb.png)
 
 **Resposta da API:**
