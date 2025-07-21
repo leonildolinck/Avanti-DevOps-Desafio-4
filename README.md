@@ -51,7 +51,7 @@ Este repositório contém a aplicação ms-saudacoes-aleatorias, desenvolvida em
 - [5. Destruindo a Infraestrutura com GitHub Actions (```destroy.yaml```)](#5-destruindo-a-infraestrutura-com-github-actions-destroyyaml)
     - [```destroy.yaml```](#destroyyaml)
 - [6. Configurando o Github Actions](#6-configurando-o-github-actions)
-- [7. Funcionamento da esteira e testes](#7-funcionamento-da-esteira-e-testes)
+- [7. Funcionamento da pipeline no GitHub Actions](#7-funcionamento-da-pipeline-no-github-actions)
     - [Fazendo um commit (push)](#fazendo-um-commit-push)
     - [Fazendo um Pull Request](#fazendo-um-pull-request)
     - [Fazendo um deploy](#fazendo-um-deploy)
@@ -709,13 +709,17 @@ No GitHub, vá para as configurações do seu repositório (Settings > Secrets a
 .   
 
 
-# 7. Funcionamento da esteira e testes
+# 7. Funcionamento da pipeline no GitHub Actions
 
 ### Fazendo um commit (push)
+
+Nessa primeira etapa de nosso pipeline, ele recebe um código em um branch e faz testes de lint (qualidade do código) e unitários (testes automatizados).
 
 ![Tests - Push](./screenshots/cicd-tests-push-done.png)
 
 ### Fazendo um Pull Request
+
+Ao aprovar (manualmente) um Pull Request e fazer um Merge Request, o código é testado novamente, pode parecer redundante, mas é essencial para atestar a qualidade do código, após o Merge Request ser aprovado.
 
 ![Tests - PR](./screenshots/cicd-tests-pullrequest-done.png)
 
@@ -735,7 +739,12 @@ Imagem no dockerhub:
 
 Aplicação rodando no koyeb:
 ![Koyeb](./screenshots/koyeb.png)
-![Resposta API](./screenshots/resposta-api.png)
+
+**Resposta da API:**
+
+Aqui faremos um requisição HTTP para a API, que nos responderá conforme o código elaborado no arquivo ```handlers/saudacoes.go```:
+
+![Resposta API](./screenshots/api-response.png)
 
 
 
